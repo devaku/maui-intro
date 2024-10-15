@@ -1,0 +1,57 @@
+﻿@page "/todo"
+@using LabEventDrivenApp.Data
+@using Microsoft.Maui.Storage
+@using System.IO
+@using System.Text.Json
+
+<h3>Todo (@todos.Count(el => el.IsDone))</h3>
+
+<ul class="list-unstyled">
+    @foreach (var todo in todos)
+    {
+
+        <li>
+            <input type="checkbox" name="isDone" @bind="todo.IsDone"/>  
+            <input type="text" name="title" @bind="todo.Title" />
+        </li>
+    }
+</ul>
+
+<button @onclick="handleButtonSave">Save</button>
+<button @onclick="handleButtonLoad">Load</button>
+
+<input placeholder="Something todo" @bind="newTodo" type="text" name="title" />
+<button @onclick="handleButtonTodo">Add Todo</button>
+
+@code {
+    private List<TodoItem> todos = new();
+    private string? newTodo;
+
+    private async Task handleButtonSave()
+    {
+        var contents = JsonSerializer.Serialize(todos);
+        var path = Path.Combine(FileSystem.AppDataDirectory, "todo.json");
+        File.WriteAllText(path, contents);
+        await App.Current.MainPage.DisplayAlert("List Saved", $"List has been saved to {path}", "OK");
+    }
+
+    private void handleButtonLoad()
+    {
+        var path = Path.Combine(FileSystem.AppDataDirectory, "todo.json");
+        if (!File.Exists(path))
+            return;
+        var contents = File.ReadAllText(path);
+        var savedItems = JsonSerializer.Deserialize<List<TodoItem>>(contents);
+        todos.Clear();
+        todos.AddRange(savedItems);
+    }
+
+    private void handleButtonTodo()
+    {
+        if (!string.IsNullOrWhiteSpace(newTodo))
+        {
+            todos.Add(new TodoItem { Title = newTodo });
+            newTodo = String.Empty;
+        }
+    }
+}
